@@ -10,4 +10,4 @@
 - [Issues](https://github.com/KirillS997/workout-tracker-srs/issues)
 - [Вехи проекта](https://github.com/KirillS997/workout-tracker-srs/milestones)
 
-Исходные материалы лабораторной №1 сохранены. GitHub Projects / Roadmap и публикация страницы в Wiki требуют отдельной настройки.
+Исходные материалы лабораторной №1 сохранены. [Страница Wiki «План проекта»](https://github.com/KirillS997/workout-tracker-srs/wiki/План-проекта) опубликована. Для GitHub Projects / Roadmap требуется отдельная настройка: текущий токен не разрешает создание личного Project.
