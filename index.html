@@ -17,6 +17,24 @@
 
         <section id="workoutSection">
             <h2>Тренировки</h2>
+
+            <form id="workoutForm" class="workout-form" novalidate>
+                <label for="workoutName">Название</label>
+                <input type="text" id="workoutName" maxlength="60" placeholder="Например: Ноги и плечи">
+
+                <label for="workoutDate">Дата</label>
+                <input type="date" id="workoutDate">
+
+                <div class="form-buttons">
+                    <button type="submit" id="saveWorkoutBtn">Сохранить</button>
+                    <button type="button" id="startWorkoutBtn">Начать</button>
+                    <button type="button" id="cancelEditBtn" class="secondary" hidden>Не изменять</button>
+                </div>
+            </form>
+
+            <h3>Запланированные тренировки</h3>
+            <ul id="workoutList" class="workout-list"></ul>
+            <p id="workoutListEmpty" class="hint">Пока нет запланированных тренировок.</p>
         </section>
 
         <section id="catalogSection">
