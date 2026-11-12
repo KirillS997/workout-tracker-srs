@@ -1,0 +1,85 @@
+/* ===== Базовые стили страницы ===== */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #1f2933;
+    background-color: #f2f4f7;
+}
+
+.page-header {
+    padding: 16px 20px;
+    color: #ffffff;
+    background-color: #1f3a5f;
+}
+
+.page-header h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.container {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+section {
+    margin-bottom: 20px;
+    padding: 16px 20px;
+    background-color: #ffffff;
+    border: 1px solid #d9dee5;
+    border-radius: 8px;
+}
+
+h2 {
+    margin: 0 0 12px;
+    font-size: 20px;
+}
+
+h3 {
+    margin: 16px 0 8px;
+    font-size: 16px;
+}
+
+/* Сообщения об успехе и об ошибке */
+.message {
+    margin-bottom: 16px;
+    padding: 10px 14px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+}
+
+.message-success {
+    color: #14532d;
+    background-color: #dcfce7;
+    border-color: #86d9a4;
+}
+
+.message-error {
+    color: #7f1d1d;
+    background-color: #fee2e2;
+    border-color: #f1a5a5;
+}
+
+.hint,
+.page-footer {
+    color: #5b6673;
+    font-size: 14px;
+}
+
+.page-footer {
+    padding: 0 20px 20px;
+    text-align: center;
+}
+
+/* Атрибут hidden должен скрывать элемент при любом display */
+[hidden] {
+    display: none !important;
+}
