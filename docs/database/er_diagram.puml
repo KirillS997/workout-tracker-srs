@@ -1,0 +1,90 @@
+@startuml er_diagram
+' ER-диаграмма базы данных приложения «Трекер тренировок»
+' Как получить картинки: java -jar plantuml.jar -tpng -tsvg er_diagram.puml
+' или вставить этот текст на https://www.plantuml.com/plantuml
+
+hide circle
+skinparam shadowing false
+skinparam nodesep 110
+skinparam ranksep 70
+skinparam dpi 110
+skinparam defaultFontName "DejaVu Sans"
+skinparam backgroundColor White
+skinparam class {
+  BackgroundColor White
+  BorderColor #333333
+  ArrowColor #333333
+}
+skinparam note {
+  BackgroundColor #FEFFDD
+  BorderColor #999999
+}
+
+title ER-диаграмма базы данных «Трекер тренировок»
+
+entity "Users" as users {
+  * user_id : INTEGER <<PK>>
+  --
+  username : TEXT
+  email : TEXT
+  theme : TEXT
+  created_at : TEXT
+}
+
+entity "Muscle_Groups" as muscle_groups {
+  * muscle_group_id : INTEGER <<PK>>
+  --
+  name : TEXT
+}
+
+entity "Workouts" as workouts {
+  * workout_id : INTEGER <<PK>>
+  --
+  name : TEXT
+  workout_date : TEXT
+  started_at : TEXT
+  finished_at : TEXT
+  created_at : TEXT
+  updated_at : TEXT
+  user_id : INTEGER <<FK>>
+}
+
+entity "Exercises" as exercises {
+  * exercise_id : INTEGER <<PK>>
+  --
+  name : TEXT
+  created_at : TEXT
+  muscle_group_id : INTEGER <<FK>>
+  user_id : INTEGER <<FK>>
+}
+
+entity "Workout_Exercises" as workout_exercises {
+  * workout_id : INTEGER <<PK, FK>>
+  * exercise_id : INTEGER <<PK, FK>>
+  --
+  position : INTEGER
+}
+
+entity "Sets" as sets {
+  * set_id : INTEGER <<PK>>
+  --
+  set_number : INTEGER
+  reps : INTEGER
+  weight_kg : REAL
+  is_completed : INTEGER
+  workout_id : INTEGER <<FK>>
+  exercise_id : INTEGER <<FK>>
+}
+
+users ||--o{ workouts : "проводит (1:N)"
+users |o--o{ exercises : "создаёт свои (0..1:N)"
+muscle_groups ||--o{ exercises : "включает (1:N)"
+workouts ||--o{ workout_exercises : "1:N"
+exercises ||--o{ workout_exercises : "1:N"
+workout_exercises ||--o{ sets : "состоит из (1:N)"
+
+note right of workout_exercises
+  Таблица связи для M:N
+  между Workouts и Exercises
+end note
+@enduml
