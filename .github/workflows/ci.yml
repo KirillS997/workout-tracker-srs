@@ -1,0 +1,30 @@
+name: CI - Code Validation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check HTML file exists
+        run: test -f index.html
+
+      - name: Check CSS file exists
+        run: test -f style.css
+
+      - name: Check JS file exists
+        run: test -f script.js
+
+      - name: Check JS syntax
+        run: node --check script.js
+
+      - name: Validation complete
+        run: echo "All required files are present"
