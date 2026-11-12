@@ -157,12 +157,206 @@ function renderCatalog() {
     });
 }
 
+// ===== Тренировки =====
+
+const NAME_MAX_LENGTH = 60;
+
+// Идентификатор тренировки, которую сейчас редактируют (null — создаётся новая)
+let editingWorkoutId = null;
+
+// Сегодняшняя дата в формате ГГГГ-ММ-ДД
+function todayIso() {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return now.getFullYear() + '-' + month + '-' + day;
+}
+
+// Превращает ГГГГ-ММ-ДД в ДД.ММ.ГГГГ для показа пользователю
+function formatDate(isoDate) {
+    const parts = isoDate.split('-');
+    return parts[2] + '.' + parts[1] + '.' + parts[0];
+}
+
+function isValidDate(isoDate) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
+        return false;
+    }
+    const date = new Date(isoDate + 'T00:00:00');
+    // Несуществующая дата (например, 31 февраля) «перескакивает» на другой день
+    return !Number.isNaN(date.getTime()) && date.getDate() === Number(isoDate.slice(8));
+}
+
+function createId() {
+    return 'w-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+}
+
+function findWorkout(id) {
+    return state.workouts.find(function (workout) {
+        return workout.id === id;
+    }) || null;
+}
+
+// Возвращает текст ошибки или пустую строку, если данные в порядке
+function validateWorkoutInput(name, date) {
+    if (name === '') {
+        return 'Введите название тренировки.';
+    }
+    if (name.length > NAME_MAX_LENGTH) {
+        return 'Название должно быть не длиннее ' + NAME_MAX_LENGTH + ' символов.';
+    }
+    if (date === '') {
+        return 'Укажите дату тренировки.';
+    }
+    if (!isValidDate(date)) {
+        return 'Дата указана неверно.';
+    }
+    return '';
+}
+
+// Кнопка «Сохранить»: добавляет тренировку в план или сохраняет изменения
+function handleSaveWorkout(event) {
+    event.preventDefault();
+    const name = document.getElementById('workoutName').value.trim();
+    const date = document.getElementById('workoutDate').value;
+
+    const error = validateWorkoutInput(name, date);
+    if (error !== '') {
+        showMessage(error, 'error');
+        return;
+    }
+
+    const edited = editingWorkoutId === null ? null : findWorkout(editingWorkoutId);
+    if (edited !== null) {
+        edited.name = name;
+        edited.date = date;
+    } else {
+        state.workouts.push({
+            id: createId(),
+            name: name,
+            date: date,
+            status: 'planned',
+            planned: true,
+            exercises: []
+        });
+    }
+
+    if (saveState()) {
+        showMessage(edited !== null ? 'Изменения сохранены.' : 'Тренировка добавлена в план.', 'success');
+    }
+    resetForm();
+    renderWorkouts();
+}
+
+// Удаляет тренировку из плана после подтверждения
+function deleteWorkout(id) {
+    const workout = findWorkout(id);
+    if (workout === null) {
+        return;
+    }
+    if (!confirm('Удалить тренировку «' + workout.name + '»?')) {
+        return;
+    }
+    state.workouts = state.workouts.filter(function (item) {
+        return item.id !== id;
+    });
+    if (editingWorkoutId === id) {
+        resetForm();
+    }
+    saveState();
+    renderWorkouts();
+}
+
+// Переносит тренировку в форму для изменения названия и даты
+function editWorkout(id) {
+    const workout = findWorkout(id);
+    if (workout === null) {
+        return;
+    }
+    editingWorkoutId = id;
+    document.getElementById('workoutName').value = workout.name;
+    document.getElementById('workoutDate').value = workout.date;
+    document.getElementById('saveWorkoutBtn').textContent = 'Сохранить изменения';
+    document.getElementById('startWorkoutBtn').hidden = true;
+    document.getElementById('cancelEditBtn').hidden = false;
+    document.getElementById('workoutName').focus();
+}
+
+// Возвращает форму в исходное состояние
+function resetForm() {
+    editingWorkoutId = null;
+    document.getElementById('workoutName').value = '';
+    document.getElementById('workoutDate').value = todayIso();
+    document.getElementById('saveWorkoutBtn').textContent = 'Сохранить';
+    document.getElementById('startWorkoutBtn').hidden = false;
+    document.getElementById('cancelEditBtn').hidden = true;
+}
+
+// Создаёт кнопку для строки списка
+function createButton(text, className, onClick) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = text;
+    button.className = className;
+    button.addEventListener('click', onClick);
+    return button;
+}
+
+// Выводит запланированные тренировки, отсортированные по дате
+function renderWorkouts() {
+    const list = document.getElementById('workoutList');
+    list.textContent = '';
+
+    const planned = state.workouts
+        .filter(function (workout) {
+            return workout.status === 'planned';
+        })
+        .sort(function (a, b) {
+            return a.date.localeCompare(b.date) || a.name.localeCompare(b.name);
+        });
+
+    planned.forEach(function (workout) {
+        const item = document.createElement('li');
+
+        const info = document.createElement('div');
+        info.className = 'workout-info';
+        const name = document.createElement('span');
+        name.className = 'workout-name';
+        name.textContent = workout.name;
+        const date = document.createElement('span');
+        date.className = 'workout-date';
+        date.textContent = formatDate(workout.date);
+        info.appendChild(name);
+        info.appendChild(date);
+
+        const actions = document.createElement('div');
+        actions.className = 'workout-actions';
+        actions.appendChild(createButton('Изменить', 'secondary', function () {
+            editWorkout(workout.id);
+        }));
+        actions.appendChild(createButton('Удалить', 'danger', function () {
+            deleteWorkout(workout.id);
+        }));
+
+        item.appendChild(info);
+        item.appendChild(actions);
+        list.appendChild(item);
+    });
+
+    document.getElementById('workoutListEmpty').hidden = planned.length > 0;
+}
+
 // ===== Запуск приложения =====
 
 function init() {
     state = loadState();
     renderStorageStatus();
     renderCatalog();
+
+    document.getElementById('workoutForm').addEventListener('submit', handleSaveWorkout);
+    document.getElementById('cancelEditBtn').addEventListener('click', resetForm);
+    resetForm();
+    renderWorkouts();
 }
 
 document.addEventListener('DOMContentLoaded', init);
