@@ -331,6 +331,9 @@ function renderWorkouts() {
 
         const actions = document.createElement('div');
         actions.className = 'workout-actions';
+        actions.appendChild(createButton('Начать', '', function () {
+            startPlannedWorkout(workout.id);
+        }));
         actions.appendChild(createButton('Изменить', 'secondary', function () {
             editWorkout(workout.id);
         }));
@@ -346,6 +349,103 @@ function renderWorkouts() {
     document.getElementById('workoutListEmpty').hidden = planned.length > 0;
 }
 
+// ===== Активная тренировка =====
+
+// Кнопка «Начать» в форме: создаёт тренировку на сегодня и сразу запускает её
+function handleStartFromForm() {
+    const name = document.getElementById('workoutName').value.trim();
+    const today = todayIso();
+
+    const error = validateWorkoutInput(name, today);
+    if (error !== '') {
+        showMessage(error, 'error');
+        return;
+    }
+    if (state.activeWorkoutId !== null) {
+        showMessage('Сначала отмените текущую тренировку.', 'error');
+        return;
+    }
+
+    const workout = {
+        id: createId(),
+        name: name,
+        date: today,
+        status: 'active',
+        planned: false,
+        exercises: []
+    };
+    state.workouts.push(workout);
+    state.activeWorkoutId = workout.id;
+
+    saveState();
+    resetForm();
+    renderActiveWorkout();
+    renderWorkouts();
+}
+
+// Кнопка «Начать» в строке списка: запускает запланированную тренировку
+function startPlannedWorkout(id) {
+    const workout = findWorkout(id);
+    if (workout === null) {
+        return;
+    }
+    if (state.activeWorkoutId !== null) {
+        showMessage('Сначала отмените текущую тренировку.', 'error');
+        return;
+    }
+    workout.status = 'active';
+    state.activeWorkoutId = id;
+    if (editingWorkoutId === id) {
+        resetForm();
+    }
+    saveState();
+    renderActiveWorkout();
+    renderWorkouts();
+}
+
+// Отменяет активную тренировку после подтверждения.
+// Запланированная тренировка возвращается в план, начатая из формы — удаляется
+function cancelActiveWorkout() {
+    const workout = findWorkout(state.activeWorkoutId);
+    if (workout === null) {
+        return;
+    }
+    if (!confirm('Отменить тренировку «' + workout.name + '»? Её данные не сохранятся.')) {
+        return;
+    }
+    if (workout.planned) {
+        workout.status = 'planned';
+    } else {
+        state.workouts = state.workouts.filter(function (item) {
+            return item.id !== workout.id;
+        });
+    }
+    state.activeWorkoutId = null;
+
+    saveState();
+    renderActiveWorkout();
+    renderWorkouts();
+    showMessage('Тренировка отменена.', 'success');
+}
+
+// Показывает активную тренировку в шапке страницы
+function renderActiveWorkout() {
+    const box = document.getElementById('activeWorkout');
+    box.textContent = '';
+
+    const workout = findWorkout(state.activeWorkoutId);
+    if (workout === null) {
+        box.hidden = true;
+        return;
+    }
+
+    const text = document.createElement('span');
+    text.textContent = 'Идёт тренировка: ' + workout.name + ' (' + formatDate(workout.date) + ')';
+    box.appendChild(text);
+    box.appendChild(createButton('Отменить', 'danger', cancelActiveWorkout));
+    box.hidden = false;
+}
+
 // ===== Запуск приложения =====
 
 function init() {
@@ -354,8 +454,10 @@ function init() {
     renderCatalog();
 
     document.getElementById('workoutForm').addEventListener('submit', handleSaveWorkout);
+    document.getElementById('startWorkoutBtn').addEventListener('click', handleStartFromForm);
     document.getElementById('cancelEditBtn').addEventListener('click', resetForm);
     resetForm();
+    renderActiveWorkout();
     renderWorkouts();
 }
 
