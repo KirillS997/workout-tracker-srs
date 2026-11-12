@@ -83,3 +83,29 @@ h3 {
 [hidden] {
     display: none !important;
 }
+
+/* ===== Справочник упражнений ===== */
+
+#exerciseCatalog {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 12px;
+}
+
+.catalog-group {
+    padding: 10px 14px;
+    background-color: #f7f9fb;
+    border: 1px solid #e1e6ec;
+    border-radius: 6px;
+}
+
+.catalog-group h3 {
+    margin: 0 0 6px;
+    color: #1f3a5f;
+}
+
+.catalog-group ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 14px;
+}
