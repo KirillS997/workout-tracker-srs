@@ -128,11 +128,41 @@ const EXERCISE_CATALOG = [
     { id: 'plank', name: 'Планка', muscleGroup: 'Пресс' }
 ];
 
+// Выводит справочник на страницу: упражнения сгруппированы по мышцам
+function renderCatalog() {
+    const container = document.getElementById('exerciseCatalog');
+    container.textContent = '';
+
+    MUSCLE_GROUPS.forEach(function (group) {
+        const exercises = EXERCISE_CATALOG.filter(function (exercise) {
+            return exercise.muscleGroup === group;
+        });
+
+        const block = document.createElement('div');
+        block.className = 'catalog-group';
+
+        const title = document.createElement('h3');
+        title.textContent = group + ' (' + exercises.length + ')';
+        block.appendChild(title);
+
+        const list = document.createElement('ul');
+        exercises.forEach(function (exercise) {
+            const item = document.createElement('li');
+            item.textContent = exercise.name;
+            list.appendChild(item);
+        });
+        block.appendChild(list);
+
+        container.appendChild(block);
+    });
+}
+
 // ===== Запуск приложения =====
 
 function init() {
     state = loadState();
     renderStorageStatus();
+    renderCatalog();
 }
 
 document.addEventListener('DOMContentLoaded', init);
