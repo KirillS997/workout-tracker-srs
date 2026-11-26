@@ -1,0 +1,159 @@
+@startuml workout_session_sequence
+' Диаграмма последовательности: тренировочный день от начала тренировки до просмотра итогов
+' Как получить картинки: java -jar plantuml.jar -tpng -tsvg workout_session_sequence.puml
+' или вставить этот текст на https://www.plantuml.com/plantuml
+
+skinparam shadowing false
+skinparam dpi 110
+skinparam defaultFontName "DejaVu Sans"
+skinparam backgroundColor White
+skinparam sequenceMessageAlign left
+skinparam sequence {
+  ArrowColor #333333
+  LifeLineBorderColor #666666
+  LifeLineBackgroundColor #E8EEF5
+  ParticipantBackgroundColor White
+  ParticipantBorderColor #333333
+  ActorBackgroundColor White
+  ActorBorderColor #333333
+  GroupBorderColor #666666
+  GroupBackgroundColor #E8EEF5
+  DividerBackgroundColor #F2F4F7
+  DividerBorderColor #999999
+}
+skinparam database {
+  BackgroundColor White
+  BorderColor #333333
+}
+skinparam note {
+  BackgroundColor #FEFFDD
+  BorderColor #999999
+}
+
+title Тренировочный день: от начала тренировки до итогов
+
+actor "Пользователь" as User
+participant "Интерфейс" as UI
+participant "Контроллер" as Controller
+participant "Сервис тренировок" as WorkoutService
+participant "Сервис аналитики" as AnalyticsService
+database "База данных" as DB
+
+== Начало тренировки ==
+
+User -> UI: Открывает приложение
+activate UI
+UI -> Controller: GET /api/workouts?status=planned
+activate Controller
+Controller -> WorkoutService: getPlannedWorkouts(user_id)
+activate WorkoutService
+WorkoutService -> DB: SELECT workout_id, name, workout_date\nFROM Workouts\nWHERE user_id = ? AND started_at IS NULL\nORDER BY workout_date
+activate DB
+DB --> WorkoutService: planned_workouts
+deactivate DB
+WorkoutService --> Controller: WorkoutsListResponse(workouts)
+deactivate WorkoutService
+Controller --> UI: 200 OK\n{workouts_array}
+deactivate Controller
+UI --> User: Список запланированных тренировок
+
+User -> UI: Нажимает «Начать» у тренировки
+UI -> Controller: POST /api/workouts/{workout_id}/start
+activate Controller
+Controller -> WorkoutService: startWorkout(workout_id)
+activate WorkoutService
+WorkoutService -> DB: UPDATE Workouts\nSET started_at = datetime('now')\nWHERE workout_id = ?
+activate DB
+DB --> WorkoutService: rows_affected
+deactivate DB
+WorkoutService --> Controller: SuccessResponse(workout)
+deactivate WorkoutService
+Controller --> UI: 200 OK\n{workout_id, started_at}
+deactivate Controller
+UI -> UI: Показать тренировку в шапке,\nзапустить таймер
+UI --> User: Экран текущей тренировки
+
+== Выполнение подходов ==
+
+loop Для каждого подхода
+  User -> UI: Вводит повторения и вес,\nотмечает подход выполненным
+  UI -> Controller: PATCH /api/sets/{set_id}\n{reps, weight_kg, is_completed: true}
+  activate Controller
+  Controller -> WorkoutService: updateSet(set_id, setData)
+  activate WorkoutService
+  WorkoutService -> DB: UPDATE Sets\nSET reps = ?, weight_kg = ?, is_completed = 1\nWHERE set_id = ?
+  activate DB
+  DB --> WorkoutService: rows_affected
+  deactivate DB
+  WorkoutService --> Controller: SuccessResponse(set)
+  deactivate WorkoutService
+  Controller --> UI: 200 OK
+  deactivate Controller
+  UI --> User: Подход отмечен выполненным
+end
+note over UI, WorkoutService
+  Проверка повторений и веса показана
+  на диаграмме «Добавление и выполнение подхода»
+end note
+
+== Завершение тренировки ==
+
+User -> UI: Нажимает «Завершить тренировку»
+UI -> Controller: POST /api/workouts/{workout_id}/finish
+activate Controller
+Controller -> WorkoutService: finishWorkout(workout_id)
+activate WorkoutService
+WorkoutService -> DB: SELECT COUNT(*) FROM Sets\nWHERE workout_id = ? AND is_completed = 1
+activate DB
+DB --> WorkoutService: completed_sets_count
+deactivate DB
+
+alt Есть выполненные подходы
+  WorkoutService -> DB: UPDATE Workouts\nSET finished_at = datetime('now')\nWHERE workout_id = ?
+  activate DB
+  DB --> WorkoutService: rows_affected
+  deactivate DB
+  WorkoutService -> AnalyticsService: getWorkoutSummary(workout_id)
+  activate AnalyticsService
+  AnalyticsService -> DB: SELECT SUM(reps * weight_kg) AS tonnage\nFROM Sets\nWHERE workout_id = ? AND is_completed = 1
+  activate DB
+  DB --> AnalyticsService: tonnage
+  deactivate DB
+  AnalyticsService --> WorkoutService: WorkoutSummary(tonnage, duration)
+  deactivate AnalyticsService
+  WorkoutService --> Controller: SuccessResponse(summary)
+  deactivate WorkoutService
+  Controller --> UI: 200 OK\n{tonnage, duration}
+  deactivate Controller
+  UI -> UI: Убрать тренировку из шапки,\nостановить таймер
+  UI --> User: Сообщение с итоговым тоннажом
+else Выполненных подходов нет
+  activate Controller
+  activate WorkoutService
+  WorkoutService --> Controller: ErrorResponse(error_message)
+  deactivate WorkoutService
+  Controller --> UI: 400 Bad Request\n{error_message}
+  deactivate Controller
+  UI --> User: Подсказка: сначала выполните\nхотя бы один подход
+end
+
+== Просмотр итогов ==
+
+User -> UI: Открывает историю тренировок
+UI -> Controller: GET /api/analytics/history
+activate Controller
+Controller -> AnalyticsService: getHistory(user_id)
+activate AnalyticsService
+AnalyticsService -> DB: SELECT w.workout_id, w.name, w.started_at, w.finished_at,\n  SUM(s.reps * s.weight_kg) AS tonnage,\n  COUNT(s.set_id) AS sets_count\nFROM Workouts w\nJOIN Sets s ON s.workout_id = w.workout_id\nWHERE w.user_id = ? AND w.finished_at IS NOT NULL\n  AND s.is_completed = 1\nGROUP BY w.workout_id\nORDER BY w.finished_at DESC
+activate DB
+DB --> AnalyticsService: history_rows
+deactivate DB
+AnalyticsService -> AnalyticsService: calculateDuration(history_rows)
+AnalyticsService --> Controller: HistoryResponse(workouts)
+deactivate AnalyticsService
+Controller --> UI: 200 OK\n{workouts_array}
+deactivate Controller
+UI -> UI: Построить список,\nновые тренировки сверху
+UI --> User: История: дата, тоннаж,\nчисло подходов, длительность
+deactivate UI
+@enduml
