@@ -2,7 +2,7 @@
 
 [![CI - Code Validation](https://github.com/KirillS997/workout-tracker-srs/actions/workflows/ci.yml/badge.svg)](https://github.com/KirillS997/workout-tracker-srs/actions/workflows/ci.yml)
 
-Техническое задание, план проекта, прототип и проект базы данных приложения «Трекер тренировок»: планирование тренировок, учёт подходов, повторений и весов.
+Техническое задание, план проекта, прототип, проект базы данных и модели поведения приложения «Трекер тренировок»: планирование тренировок, учёт подходов, повторений и весов.
 
 ## Приложение
 
@@ -31,6 +31,8 @@
 | `.github/workflows/ci.yml` | Автоматическая проверка (GitHub Actions) |
 | `database/` | SQL-скрипты базы данных и описание нормализации |
 | `docs/database/` | Анализ предметной области и ER-диаграмма |
+| `docs/use_case/` | Use Case диаграмма |
+| `docs/behavior/` | Диаграммы последовательности и их описание |
 
 ## База данных
 
@@ -49,6 +51,22 @@
 Как проверить скрипты: откройте [sqliteonline.com](https://sqliteonline.com/), выполните содержимое `schema.sql`, затем `seed_data.sql`.
 
 Прототип пока хранит данные в браузере (localStorage). База данных — проект хранилища для следующих версий.
+
+## Поведение системы
+
+Поведение приложения описано Use Case диаграммой и четырьмя диаграммами последовательности. Подробное описание — в [`docs/behavior/README.md`](docs/behavior/README.md).
+
+![Use Case диаграмма](docs/use_case/use_case_diagram.png)
+
+| Диаграмма | Файлы |
+|---|---|
+| Use Case диаграмма | [PNG](docs/use_case/use_case_diagram.png), [SVG](docs/use_case/use_case_diagram.svg), [PlantUML](docs/use_case/use_case_diagram.puml) |
+| Создание тренировки | [PNG](docs/behavior/sequence/create_workout_sequence.png), [SVG](docs/behavior/sequence/create_workout_sequence.svg), [PlantUML](docs/behavior/sequence/create_workout_sequence.puml) |
+| Добавление и выполнение подхода | [PNG](docs/behavior/sequence/add_set_sequence.png), [SVG](docs/behavior/sequence/add_set_sequence.svg), [PlantUML](docs/behavior/sequence/add_set_sequence.puml) |
+| Поиск и фильтрация упражнений | [PNG](docs/behavior/sequence/filter_exercises_sequence.png), [SVG](docs/behavior/sequence/filter_exercises_sequence.svg), [PlantUML](docs/behavior/sequence/filter_exercises_sequence.puml) |
+| Тренировочный день | [PNG](docs/behavior/sequence/workout_session_sequence.png), [SVG](docs/behavior/sequence/workout_session_sequence.svg), [PlantUML](docs/behavior/sequence/workout_session_sequence.puml) |
+
+Диаграммы последовательности описывают целевую архитектуру с сервером и базой данных. Прототип версии 1.0.0 работает целиком в браузере.
 
 ## Лабораторная работа №1 — Требования
 
@@ -74,3 +92,11 @@
 - [ER-диаграмма](docs/database/er_diagram.png)
 - [DDL-скрипт schema.sql](database/schema.sql) и [тестовые данные seed_data.sql](database/seed_data.sql)
 - [Pull Request с проектом базы данных](https://github.com/KirillS997/workout-tracker-srs/pull/32)
+
+## Лабораторная работа №5 — Моделирование поведения
+
+- [Моделирование поведения (Wiki)](https://github.com/KirillS997/workout-tracker-srs/wiki/Моделирование-поведения)
+- [Описание диаграмм](docs/behavior/README.md)
+- [Use Case диаграмма](docs/use_case/use_case_diagram.png)
+- [Диаграммы последовательности](docs/behavior/sequence)
+- [Pull Request с диаграммами](https://github.com/KirillS997/workout-tracker-srs/pull/33)

@@ -1,0 +1,71 @@
+@startuml create_workout_sequence
+' Диаграмма последовательности: создание тренировки
+' Как получить картинки: java -jar plantuml.jar -tpng -tsvg create_workout_sequence.puml
+' или вставить этот текст на https://www.plantuml.com/plantuml
+
+skinparam shadowing false
+skinparam dpi 110
+skinparam defaultFontName "DejaVu Sans"
+skinparam backgroundColor White
+skinparam sequenceMessageAlign left
+skinparam sequence {
+  ArrowColor #333333
+  LifeLineBorderColor #666666
+  LifeLineBackgroundColor #E8EEF5
+  ParticipantBackgroundColor White
+  ParticipantBorderColor #333333
+  ActorBackgroundColor White
+  ActorBorderColor #333333
+  GroupBorderColor #666666
+  GroupBackgroundColor #E8EEF5
+  DividerBackgroundColor #F2F4F7
+  DividerBorderColor #999999
+}
+skinparam database {
+  BackgroundColor White
+  BorderColor #333333
+}
+skinparam note {
+  BackgroundColor #FEFFDD
+  BorderColor #999999
+}
+
+title Создание тренировки
+
+actor "Пользователь" as User
+participant "Интерфейс" as UI
+participant "Контроллер" as Controller
+participant "Сервис тренировок" as WorkoutService
+database "База данных" as DB
+
+User -> UI: Вводит название и дату,\nнажимает «Сохранить»
+activate UI
+UI -> Controller: POST /api/workouts\n{name, workout_date}
+activate Controller
+Controller -> WorkoutService: createWorkout(user_id, workoutData)
+activate WorkoutService
+WorkoutService -> WorkoutService: validateWorkoutData(workoutData)
+
+alt Данные верны
+  WorkoutService -> DB: INSERT INTO Workouts\n(name, workout_date, user_id)
+  activate DB
+  DB --> WorkoutService: workout_id
+  deactivate DB
+  WorkoutService --> Controller: SuccessResponse(workout)
+  deactivate WorkoutService
+  Controller --> UI: 201 Created\n{workout_id, name, workout_date}
+  deactivate Controller
+  UI -> UI: Добавить тренировку в список,\nотсортировать список по дате
+  UI -> UI: Очистить форму
+  UI --> User: Сообщение «Тренировка добавлена в план»
+else Название или дата не указаны
+  activate Controller
+  activate WorkoutService
+  WorkoutService --> Controller: ErrorResponse(error_message)
+  deactivate WorkoutService
+  Controller --> UI: 400 Bad Request\n{error_message}
+  deactivate Controller
+  UI --> User: Сообщение об ошибке,\nтренировка не создана
+end
+deactivate UI
+@enduml

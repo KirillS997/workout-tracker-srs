@@ -1,0 +1,77 @@
+@startuml filter_exercises_sequence
+' Диаграмма последовательности: поиск и фильтрация упражнений
+' Как получить картинки: java -jar plantuml.jar -tpng -tsvg filter_exercises_sequence.puml
+' или вставить этот текст на https://www.plantuml.com/plantuml
+
+skinparam shadowing false
+skinparam dpi 110
+skinparam defaultFontName "DejaVu Sans"
+skinparam backgroundColor White
+skinparam sequenceMessageAlign left
+skinparam sequence {
+  ArrowColor #333333
+  LifeLineBorderColor #666666
+  LifeLineBackgroundColor #E8EEF5
+  ParticipantBackgroundColor White
+  ParticipantBorderColor #333333
+  ActorBackgroundColor White
+  ActorBorderColor #333333
+  GroupBorderColor #666666
+  GroupBackgroundColor #E8EEF5
+  DividerBackgroundColor #F2F4F7
+  DividerBorderColor #999999
+}
+skinparam database {
+  BackgroundColor White
+  BorderColor #333333
+}
+skinparam note {
+  BackgroundColor #FEFFDD
+  BorderColor #999999
+}
+
+title Поиск и фильтрация упражнений в справочнике
+
+actor "Пользователь" as User
+participant "Интерфейс" as UI
+participant "Контроллер" as Controller
+participant "Сервис упражнений" as ExerciseService
+database "База данных" as DB
+
+User -> UI: Выбирает группу мышц\nи вводит часть названия
+activate UI
+UI -> Controller: GET /api/exercises\n?muscle_group={muscle_group_id}&search={text}
+activate Controller
+Controller -> ExerciseService: findExercises(user_id, muscle_group_id, text)
+activate ExerciseService
+ExerciseService -> DB: SELECT e.exercise_id, e.name, mg.name AS muscle_group\nFROM Exercises e\nJOIN Muscle_Groups mg\n  ON mg.muscle_group_id = e.muscle_group_id\nWHERE (e.user_id IS NULL OR e.user_id = ?)\n  AND e.muscle_group_id = ?\nORDER BY e.name
+activate DB
+note right of DB
+  Условие по группе мышц
+  добавляется, если группа выбрана.
+  Первое условие оставляет
+  предустановленные упражнения
+  и собственные упражнения
+  пользователя.
+end note
+DB --> ExerciseService: exercises_list
+deactivate DB
+ExerciseService -> ExerciseService: filterByName(exercises_list, text)
+note right of ExerciseService
+  Поиск по части названия
+  без учёта регистра
+end note
+ExerciseService --> Controller: ExercisesListResponse(exercises)
+deactivate ExerciseService
+Controller --> UI: 200 OK\n{exercises_array}
+deactivate Controller
+UI -> UI: Очистить текущий список
+
+alt Упражнения найдены
+  UI -> UI: Показать название\nи группу мышц каждого упражнения
+  UI --> User: Только подходящие упражнения
+else Список пуст
+  UI --> User: Сообщение «Ничего не найдено»
+end
+deactivate UI
+@enduml

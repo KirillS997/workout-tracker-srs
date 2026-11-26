@@ -1,0 +1,101 @@
+@startuml add_set_sequence
+' Диаграмма последовательности: добавление и выполнение подхода
+' Как получить картинки: java -jar plantuml.jar -tpng -tsvg add_set_sequence.puml
+' или вставить этот текст на https://www.plantuml.com/plantuml
+
+skinparam shadowing false
+skinparam dpi 110
+skinparam defaultFontName "DejaVu Sans"
+skinparam backgroundColor White
+skinparam sequenceMessageAlign left
+skinparam sequence {
+  ArrowColor #333333
+  LifeLineBorderColor #666666
+  LifeLineBackgroundColor #E8EEF5
+  ParticipantBackgroundColor White
+  ParticipantBorderColor #333333
+  ActorBackgroundColor White
+  ActorBorderColor #333333
+  GroupBorderColor #666666
+  GroupBackgroundColor #E8EEF5
+  DividerBackgroundColor #F2F4F7
+  DividerBorderColor #999999
+}
+skinparam database {
+  BackgroundColor White
+  BorderColor #333333
+}
+skinparam note {
+  BackgroundColor #FEFFDD
+  BorderColor #999999
+}
+
+title Добавление и выполнение подхода
+
+actor "Пользователь" as User
+participant "Интерфейс" as UI
+participant "Контроллер" as Controller
+participant "Сервис тренировок" as WorkoutService
+database "База данных" as DB
+
+== Добавление подхода ==
+
+User -> UI: Нажимает «+ Подход»\nу упражнения
+activate UI
+UI -> Controller: POST /api/workouts/{workout_id}\n/exercises/{exercise_id}/sets
+activate Controller
+Controller -> WorkoutService: addSet(workout_id, exercise_id)
+activate WorkoutService
+WorkoutService -> DB: SELECT set_number, reps, weight_kg\nFROM Sets\nWHERE workout_id = ? AND exercise_id = ?\nORDER BY set_number DESC LIMIT 1
+activate DB
+DB --> WorkoutService: last_set
+deactivate DB
+WorkoutService -> WorkoutService: buildNextSet(last_set)
+note right of WorkoutService
+  Номер подхода = предыдущий + 1.
+  Повторения и вес копируются
+  из предыдущего подхода.
+  У первого подхода они пустые.
+end note
+WorkoutService -> DB: INSERT INTO Sets\n(workout_id, exercise_id, set_number, reps, weight_kg)
+activate DB
+DB --> WorkoutService: set_id
+deactivate DB
+WorkoutService --> Controller: SuccessResponse(set)
+deactivate WorkoutService
+Controller --> UI: 201 Created\n{set_id, set_number, reps, weight_kg}
+deactivate Controller
+UI -> UI: Добавить строку подхода
+UI --> User: Новый подход с повторениями\nи весом предыдущего
+
+== Выполнение подхода ==
+
+User -> UI: Исправляет повторения и вес,\nотмечает подход выполненным
+UI -> Controller: PATCH /api/sets/{set_id}\n{reps, weight_kg, is_completed: true}
+activate Controller
+Controller -> WorkoutService: updateSet(set_id, setData)
+activate WorkoutService
+WorkoutService -> WorkoutService: validateSetData(setData)
+
+alt Данные верны
+  WorkoutService -> DB: UPDATE Sets\nSET reps = ?, weight_kg = ?, is_completed = 1\nWHERE set_id = ?
+  activate DB
+  DB --> WorkoutService: rows_affected
+  deactivate DB
+  WorkoutService --> Controller: SuccessResponse(set)
+  deactivate WorkoutService
+  Controller --> UI: 200 OK\n{set_id, reps, weight_kg, is_completed}
+  deactivate Controller
+  UI -> UI: Выделить выполненный подход
+  UI --> User: Подход отмечен выполненным
+else Повторения вне 1–999 или вес вне 0–500 кг с шагом 0,5
+  activate Controller
+  activate WorkoutService
+  WorkoutService --> Controller: ErrorResponse(error_message)
+  deactivate WorkoutService
+  Controller --> UI: 400 Bad Request\n{error_message}
+  deactivate Controller
+  UI --> User: Сообщение об ошибке,\nподход не сохранён
+end
+deactivate UI
+@enduml
