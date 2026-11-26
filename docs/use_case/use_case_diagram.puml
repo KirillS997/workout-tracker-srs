@@ -1,0 +1,135 @@
+@startuml use_case_diagram
+' Use Case диаграмма приложения «Трекер тренировок»
+' Как получить картинки: java -jar plantuml.jar -tpng -tsvg use_case_diagram.puml
+' или вставить этот текст на https://www.plantuml.com/plantuml
+
+left to right direction
+skinparam shadowing false
+skinparam dpi 110
+skinparam ranksep 110
+skinparam defaultFontName "DejaVu Sans"
+skinparam backgroundColor White
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor White
+  BorderColor #333333
+  ArrowColor #333333
+}
+skinparam actor {
+  BackgroundColor White
+  BorderColor #333333
+}
+skinparam rectangle {
+  BorderColor #333333
+}
+skinparam package {
+  BorderColor #999999
+  FontColor #1F3A5F
+}
+skinparam note {
+  BackgroundColor #FEFFDD
+  BorderColor #999999
+}
+
+title Use Case диаграмма «Трекер тренировок»
+
+actor "Пользователь" as User
+
+rectangle "Трекер тренировок" {
+
+  package "Планирование тренировок" {
+    usecase "Создание тренировки" as CreateWorkout
+    usecase "Редактирование тренировки" as EditWorkout
+    usecase "Удаление тренировки" as DeleteWorkout
+    usecase "Просмотр списка\nзапланированных тренировок" as ViewPlan
+  }
+
+  package "Проведение тренировки" {
+    usecase "Начало тренировки" as StartWorkout
+    usecase "Добавление упражнения\nв тренировку" as AddExercise
+    usecase "Добавление подхода\n(повторения и вес)" as AddSet
+    usecase "Отметка подхода выполненным" as CompleteSet
+    usecase "Редактирование подхода" as EditSet
+    usecase "Удаление подхода" as DeleteSet
+    usecase "Завершение тренировки" as FinishWorkout
+    usecase "Отмена тренировки" as CancelWorkout
+  }
+
+  package "Справочник упражнений" {
+    usecase "Просмотр справочника\nупражнений" as ViewCatalog
+    usecase "Поиск упражнения\nпо названию" as SearchExercise
+    usecase "Фильтр по группе мышц" as FilterByMuscle
+    usecase "Добавление собственного\nупражнения" as AddOwnExercise
+  }
+
+  package "История и аналитика" {
+    usecase "Просмотр истории\nтренировок" as ViewHistory
+    usecase "Просмотр деталей\nтренировки" as ViewDetails
+    usecase "Повтор тренировки" as RepeatWorkout
+    usecase "Просмотр графика прогресса\nпо упражнению" as ViewProgress
+    usecase "Просмотр статистики\nи личных рекордов" as ViewStats
+  }
+
+  package "Данные и настройки" {
+    usecase "Экспорт данных" as ExportData
+    usecase "Импорт данных" as ImportData
+    usecase "Сброс данных" as ResetData
+    usecase "Переключение темы\nоформления" as SwitchTheme
+  }
+
+  usecase "Проверка введённых данных" as Validate
+  usecase "Автосохранение изменений" as AutoSave
+
+  ' Include: обязательная часть другого варианта использования
+  CreateWorkout ..> Validate : <<include>>
+  EditWorkout ..> Validate : <<include>>
+  AddSet ..> Validate : <<include>>
+  EditSet ..> Validate : <<include>>
+  FinishWorkout ..> Validate : <<include>>
+  AddOwnExercise ..> Validate : <<include>>
+  ImportData ..> Validate : <<include>>
+
+  CreateWorkout ..> AutoSave : <<include>>
+  AddSet ..> AutoSave : <<include>>
+  CompleteSet ..> AutoSave : <<include>>
+  FinishWorkout ..> AutoSave : <<include>>
+
+  AddExercise .[norank].> ViewCatalog : <<include>>
+
+  ' Extend: необязательное дополнение к варианту использования
+  ViewCatalog <.. SearchExercise : <<extend>>
+  ViewCatalog <.. FilterByMuscle : <<extend>>
+  ViewHistory <.. ViewDetails : <<extend>>
+  ViewDetails <.. RepeatWorkout : <<extend>>
+
+  note right of AutoSave
+    Включается во все варианты использования,
+    которые изменяют данные. Стрелки показаны
+    только для основных, чтобы не перегружать
+    диаграмму.
+  end note
+}
+
+' Связи актора с вариантами использования
+User -- CreateWorkout
+User -- EditWorkout
+User -- DeleteWorkout
+User -- ViewPlan
+User -- StartWorkout
+User -- AddExercise
+User -- AddSet
+User -- CompleteSet
+User -- EditSet
+User -- DeleteSet
+User -- FinishWorkout
+User -- CancelWorkout
+User -- ViewCatalog
+User -- AddOwnExercise
+User -- ViewHistory
+User -- ViewProgress
+User -- ViewStats
+User -- ExportData
+User -- ImportData
+User -- ResetData
+User -- SwitchTheme
+@enduml
